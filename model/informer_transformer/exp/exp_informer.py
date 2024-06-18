@@ -1,5 +1,5 @@
 # from data.data_loader import Dataset_ETT_hour, Dataset_ETT_minute, Dataset_Custom, Dataset_Pred
-from solarsat.solarsat_informer_wrap import SOLARSAT
+from solarcube.solarcube_informer_wrap import SOLARCUBE
 from exp.exp_basic import Exp_Basic
 from models.model import Informer, InformerStack,Informer_noT, Transformer_noT, PatchTST
 
@@ -103,7 +103,7 @@ class Exp_Informer(Exp_Basic):
         #     freq=freq,
         #     cols=args.cols
         # )
-        data_set = SOLARSAT(
+        data_set = SOLARCUBE(
             input_len = args.seq_len,
             output_len=args.pred_len,
             data_path=args.data_path + endfile,

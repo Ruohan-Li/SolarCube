@@ -1,6 +1,7 @@
 import ctypes
 libgcc_s = ctypes.CDLL('libgcc_s.so.1')
 import warnings
+from tqdm import tqdm
 from typing import Union, Dict
 from shutil import copyfile
 from copy import deepcopy
@@ -29,7 +30,7 @@ from earthformer.utils.layout import layout_to_in_out_slice
 from earthformer.visualization.nbody import save_example_vis_results
 #from earthformer.metrics.sevir import SEVIRSkillScore
 from earthformer.cuboid_transformer.cuboid_transformer import CuboidTransformerModel
-from earthformer.datasets.LSTM.SolarSat_torchlightning_wrap import SolarSatLightningDataModule
+from solarcube.solarcube_torch_wrap import SolarCubeLightningDataModule
 from earthformer.utils.apex_ddp import ApexDDPStrategy
 from pytorch_lightning.utilities.cloud_io import load as pl_load
 import time
@@ -39,7 +40,11 @@ exps_dir = os.path.join(_curr_dir, "experiments")
 print(_curr_dir)
 pretrained_checkpoints_dir = cfg.pretrained_checkpoints_dir
 #pytorch_state_dict_name = "earthformer.pt"
-
+def print_memory_usage():
+    allocated = torch.cuda.memory_allocated()
+    cached = torch.cuda.memory_reserved()
+    print(f'Allocated memory: {allocated / 1024**3:.2f} GB')
+    print(f'Cached memory: {cached / 1024**3:.2f} GB')
 class CuboidLSTMModule(pl.LightningModule):
 
     def __init__(self,
@@ -106,11 +111,10 @@ class CuboidLSTMModule(pl.LightningModule):
             # initial_downsample
             initial_downsample_type=model_cfg["initial_downsample_type"],
             initial_downsample_activation=model_cfg["initial_downsample_activation"],
-            # initial_downsample_type=="stack_conv"
-            initial_downsample_stack_conv_num_layers=model_cfg["initial_downsample_stack_conv_num_layers"],
-            initial_downsample_stack_conv_dim_list=model_cfg["initial_downsample_stack_conv_dim_list"],
-            initial_downsample_stack_conv_downscale_list=model_cfg["initial_downsample_stack_conv_downscale_list"],
-            initial_downsample_stack_conv_num_conv_list=model_cfg["initial_downsample_stack_conv_num_conv_list"],
+            # initial_downsample_type=="conv"
+            initial_downsample_scale=model_cfg["initial_downsample_scale"],
+            initial_downsample_conv_layers=model_cfg["initial_downsample_conv_layers"],
+            final_upsample_conv_layers=model_cfg["final_upsample_conv_layers"],
             # misc
             padding_type=model_cfg["padding_type"],
             z_init_method=model_cfg["z_init_method"],
@@ -490,7 +494,7 @@ class CuboidLSTMModule(pl.LightningModule):
     @staticmethod
     def get_lstm_datamodule(dataset_oc,
                              micro_batch_size: int = 1):
-        dm = SolarSatLightningDataModule(dataset_oc=dataset_oc, batch_size=micro_batch_size)
+        dm = SolarCubeLightningDataModule(dataset_oc=dataset_oc, batch_size=micro_batch_size)
         return dm
 
 
@@ -498,6 +502,7 @@ class CuboidLSTMModule(pl.LightningModule):
         in_seq, target_seq = batch
         pred_seq = self.torch_nn_module(in_seq)
         loss = F.mse_loss(pred_seq, target_seq)
+        print_memory_usage()
         return pred_seq, loss
 
     def training_step(self, batch, batch_idx):
@@ -651,16 +656,15 @@ class CuboidLSTMModule(pl.LightningModule):
             if batch_idx in example_data_idx_list:
                 micro_batch_size = in_seq.shape[self.layout.find("N")]
                 data_idx = int(batch_idx * micro_batch_size)
-                save_example_vis_results(
-                    save_dir=self.example_save_dir,
-                    save_prefix=f'{mode}_epoch_{self.current_epoch}_data_{data_idx}',
-                    in_seq=in_seq.detach().float().cpu().numpy(),
-                    target_seq=target_seq.detach().float().cpu().numpy(),
-                    pred_seq=pred_seq.detach().float().cpu().numpy(),
-                    layout=self.layout,
-                    plot_stride=1,
-                    label=self.oc.logging.logging_prefix)
-
+                # save_example_vis_results(
+                #     save_dir=self.example_save_dir,
+                #     save_prefix=f'{mode}_epoch_{self.current_epoch}_data_{data_idx}',
+                #     in_seq=in_seq.detach().float().cpu().numpy(),
+                #     target_seq=target_seq.detach().float().cpu().numpy(),
+                #     pred_seq=pred_seq.detach().float().cpu().numpy(),
+                #     layout=self.layout,
+                #     plot_stride=1,
+                #     label=self.oc.logging.logging_prefix)
 
 def get_parser():
     parser = argparse.ArgumentParser()
@@ -669,7 +673,6 @@ def get_parser():
     parser.add_argument('--gpui', default=0, type=int)    #for specific gpu device, but no parallel
     parser.add_argument('--cfg', default=None, type=str)
     parser.add_argument('--test', action='store_true')
-    parser.add_argument('--train', action='store_true')
     parser.add_argument('--pretrained', action='store_true',
                         help='Load pretrained checkpoints for test.')
     parser.add_argument('--ckpt_name', default=None, type=str,
@@ -677,6 +680,7 @@ def get_parser():
     return parser
 
 def main():
+    print_memory_usage()
     start=time.time()
     parser = get_parser()
     args = parser.parse_args()
@@ -689,7 +693,8 @@ def main():
         micro_batch_size = oc_from_file.optim.micro_batch_size
         max_epochs = oc_from_file.optim.max_epochs
         seed = oc_from_file.optim.seed
-        name_prefix=str(dataset_oc['train_tile_list'])+'_'+str(dataset_oc['test_tile_list'])+'_'+str(dataset_oc['x_img_types'])+str(dataset_oc['y_img_types'])
+        # name_prefix=dataset_oc['dataset_source']+'_'+dataset_oc['time_res']+'_'+str(dataset_oc['in_len'])+'_'+str(dataset_oc['out_len'])+'_'
+        name_prefix=oc_from_file.logging.version
         print(name_prefix)
     else:
         dataset_oc = OmegaConf.to_object(CuboidLSTMModule.get_dataset_config())
@@ -698,96 +703,94 @@ def main():
         max_epochs = None
         seed = 0
     seed_everything(seed, workers=True)
+    save_dir_validate = 'prediction_earthformer/' + name_prefix
+    if not os.path.isdir(save_dir_validate):
+            os.makedirs(save_dir_validate)
     dm = CuboidLSTMModule.get_lstm_datamodule(
         dataset_oc=dataset_oc,
         micro_batch_size=micro_batch_size)
-    dm.prepare_data()
+    # dm.prepare_data()
     dm.setup()
-
-    all_test_data_x = []
-    all_test_data_y = []
-    # for i in range(len(dm.lstm_test)):
-    print(len(dm.lstm_predict))
-    for i in range(2):
-        data = dm.lstm_test[i]  # Assume this returns a NumPy array
-        all_test_data_x.append(data[0])
-        all_test_data_y.append(data[1])
-    x_test = np.stack(all_test_data_x)
-    y_test = np.stack(all_test_data_y)
-
-    a=np.load(os.path.join( exps_dir, "lstm/checkpoints/prediction", name_prefix+'_prediction.npz'),allow_pickle=True)
-    y=a['arr_0']
-    for i in range(len(y)):
-        y[i]=y[i].numpy()
-    y_pred=np.concatenate(y, axis=0 )
+    print_memory_usage()
+    accumulate_grad_batches = total_batch_size // (micro_batch_size * args.gpus)
+    total_num_steps = CuboidLSTMModule.get_total_num_steps(
+        epoch=max_epochs,
+        num_samples=dm.num_train_samples,
+        total_batch_size=total_batch_size,
+     )
+    print('finish1')
+    pl_module = CuboidLSTMModule(
+        total_num_steps=total_num_steps,
+        save_dir=args.save,
+        oc_file=args.cfg)
+    gpuindex=[int(x) for x in str(args.gpui)]
+    print(gpuindex)
+    trainer_kwargs = pl_module.set_trainer_kwargs(
+        devices=gpuindex, #args.gpus
+        accumulate_grad_batches=accumulate_grad_batches,
+    )
+    print(args.gpus)
+    trainer = Trainer(**trainer_kwargs)
+    print('finish2')
+    print_memory_usage()
+    if args.test:
+        assert args.ckpt_name is not None, f"args.ckpt_name is required for test!"
+        ckpt_path = os.path.join(pl_module.save_dir, "checkpoints", args.ckpt_name)
+        checkpoint_state=pl_load(os.path.join(pl_module.save_dir, "checkpoints", name_prefix+'.pt'), map_location=torch.device("cpu"))
+        pl_module.load_state_dict(checkpoint_state)
+        pl_module.eval()
+        predictions= trainer.predict(model=pl_module,
+                     datamodule=dm)
+        
+        # state_dict = pl_load(ckpt_path, map_location=torch.device("cpu"))['state_dict']
+        # torch.save(state_dict, os.path.join(pl_module.save_dir, "checkpoints", name_prefix+'.pt'))
+        
+        # pl_module.load_state_dict(state_dict)
+        # pl_module.eval()
+        
+        # predictions= trainer.predict(model=pl_module,
+        #              datamodule=dm)      
+        np.savez_compressed(os.path.join(save_dir_validate, name_prefix+'_transformer_prediction.npz'), predictions)
     
-    print(x_test.shape, y_test.shape, y_pred.shape)
+        # testLoader = dm.test_dataloader()
+        # print('saving test data...')
+        # x_test=[]
+        # y_test=[]
+        # t = tqdm(testLoader, leave=False, total=len(testLoader))
+        # for i, ( inputVar,targetVar) in enumerate(t):
+        #     x_test.append(inputVar.detach().cpu())  # Ensure tensors are detached and moved to CPU
+        #     y_test.append(targetVar.detach().cpu())
+        # x_test_tensor = torch.cat(x_test, dim=0)  # Adjust 'dim' as necessary for your data
+        # y_test_tensor = torch.cat(y_test, dim=0)
+        # x_test_np = x_test_tensor.numpy()
+        # y_test_np = y_test_tensor.numpy()
+        # print(x_test_np.shape, y_test_np.shape)
+        # np.savez_compressed(os.path.join(save_dir_validate,name_prefix+'_test.npz'), x_test_np, y_test_np, dm.lstm_test.solarsat_dataloader._samples)
+        
     
-    np.savez_compressed(os.path.join( exps_dir, "lstm/checkpoints/prediction", name_prefix+'_test'), x_test,y_test,y_pred) 
-    
-    # accumulate_grad_batches = total_batch_size // (micro_batch_size * args.gpus)
-    # total_num_steps = CuboidLSTMModule.get_total_num_steps(
-    #     epoch=max_epochs,
-    #     num_samples=dm.num_train_samples,
-    #     total_batch_size=total_batch_size,
-    #  )
-    # print('finish1')
-    # pl_module = CuboidLSTMModule(
-    #     total_num_steps=total_num_steps,
-    #     save_dir=args.save,
-    #     oc_file=args.cfg)
-    # print('finish2')
-    # gpuindex=[int(x) for x in str(args.gpui)]
-    # print(gpuindex)
-    # # trainer_kwargs = pl_module.set_trainer_kwargs(
-    # #     devices=gpuindex, #args.gpus
-    # #     accumulate_grad_batches=accumulate_grad_batches,
-    # # )
-    # trainer_kwargs = pl_module.set_trainer_kwargs(
-    #     devices=30,  # Explicitly setting to use one device, the CPU
-    #     accelerator='cpu',  # Explicitly specifying the use of the CPU
-    #     accumulate_grad_batches=accumulate_grad_batches,
-    # )
-    # trainer = Trainer(**trainer_kwargs)
-    # if args.test:
-    #     # assert args.ckpt_name is not None, f"args.ckpt_name is required for test!"
-    #     if args.ckpt_name is not None:
-    #         ckpt_path = os.path.join(pl_module.save_dir, "checkpoints", args.ckpt_name)
-    #     else:
-    #         ckpt_path = os.path.join(pl_module.save_dir, "checkpoints", name_prefix+'.pt')
-    #     checkpoint_state=pl_load(ckpt_path, map_location=torch.device("cpu"))
-    #     pl_module.load_state_dict(checkpoint_state)
-    #     pl_module.eval()
-    #     if args.train:
-    #         print('testing training data ...')
-    #         predictions= trainer.predict(model=pl_module,
-    #                  datamodule=dm)
-    #         np.savez_compressed(os.path.join(pl_module.save_dir, "checkpoints/prediction",name_prefix+'_prediction'), predictions)
-    #     else:
-    #         predictions= trainer.test(model=pl_module,
-    #                  datamodule=dm)
-    #         np.savez_compressed(os.path.join(pl_module.save_dir, "checkpoints/prediction",name_prefix+'_test_prediction'), predictions)
-    # else:
-    #     if args.ckpt_name is not None:
-    #         ckpt_path = os.path.join(pl_module.save_dir, "checkpoints", args.ckpt_name)
-    #         if not os.path.exists(ckpt_path):
-    #             warnings.warn(f"ckpt {ckpt_path} not exists! Start training from epoch 0.")
-    #             ckpt_path = None
-    #     else:
-    #         ckpt_path = None
-    #     trainer.fit(model=pl_module,
-    #                 datamodule=dm,
-    #                 ckpt_path=ckpt_path)
-    #     trainer.test(ckpt_path="best",
-    #                  datamodule=dm)
+    else:
+        if args.ckpt_name is not None:
+            ckpt_path = os.path.join(pl_module.save_dir, "checkpoints", args.ckpt_name)
+            if not os.path.exists(ckpt_path):
+                warnings.warn(f"ckpt {ckpt_path} not exists! Start training from epoch 0.")
+                ckpt_path = None
+        else:
+            ckpt_path = None
+        print('start training')
+        print_memory_usage()
+        trainer.fit(model=pl_module,
+                    datamodule=dm,
+                    ckpt_path=ckpt_path)
+        predictions= trainer.predict(ckpt_path="best",
+                     datamodule=dm)
       
-    #     state_dict = pl_load(trainer.checkpoint_callback.best_model_path, map_location=torch.device("cpu"))['state_dict']
-    #     torch.save(state_dict, os.path.join(pl_module.save_dir, "checkpoints", name_prefix+'.pt'))
-    #     predictions=trainer.test(ckpt_path="best",
-    #                  datamodule=dm)
-    #     np.savez_compressed(os.path.join(pl_module.save_dir, "checkpoints/prediction", name_prefix+'_prediction'), predictions)
-    #     end=time.time()
-    #     print(end-start)
+        state_dict = pl_load(trainer.checkpoint_callback.best_model_path, map_location=torch.device("cpu"))['state_dict']
+        torch.save(state_dict, os.path.join(pl_module.save_dir, "checkpoints", name_prefix+'.pt'))
+        
+        np.savez_compressed(os.path.join(save_dir_validate, name_prefix+'_transformer_prediction.npz'), predictions)
+        
+        end=time.time()
+        print(end-start)
         
 if __name__ == "__main__":
     main()

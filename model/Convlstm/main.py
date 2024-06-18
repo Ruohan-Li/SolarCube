@@ -19,7 +19,7 @@ from decoder import Decoder
 from model import ED
 from net_params import convlstm_encoder_params, convlstm_decoder_params
 # from data.SolarSat_torch_wrap import SolarSatDataModule
-from solarsat.solarsat_torch_wrap import SolarSatDataModule
+from solarcube.solarcube_torch_wrap import SolarCubeDataModule
 import torch
 from torch import nn
 from torch.optim import lr_scheduler
@@ -116,7 +116,7 @@ if not os.path.isdir(save_dir_validate):
         os.makedirs(save_dir_validate)
 if not os.path.isdir(save_dir):
         os.makedirs(save_dir)
-dm = SolarSatDataModule(dataset_oc=dataset_oc)
+dm = SolarCubeDataModule(dataset_oc=dataset_oc)
 dm.prepare_data()
 dm.setup()
 
@@ -151,7 +151,7 @@ def data():
     x_test_np = x_test_tensor.numpy()
     y_test_np = y_test_tensor.numpy()
     print(x_test_np.shape, y_test_np.shape)
-    np.savez_compressed('solarsat_point_if_test.npz', x_test_np, y_test_np, dm.lstm_test.solarsat_dataloader._samples)
+    np.savez_compressed('solarcube_point_if_test.npz', x_test_np, y_test_np, dm.lstm_test.solarcube_dataloader._samples)
 
     print('saving train data...')
     x_train=[]
@@ -165,7 +165,7 @@ def data():
     x_train_np = x_train_tensor.numpy()
     y_train_np = y_train_tensor.numpy()
     print(x_train_np.shape, y_train_np.shape)
-    np.savez_compressed('solarsat_point_if_train.npz', x_train_np, y_train_np, dm.lstm_train_val.solarsat_dataloader._samples)
+    np.savez_compressed('solarcube_point_if_train.npz', x_train_np, y_train_np, dm.lstm_train_val.solarcube_dataloader._samples)
     
 def test():
     encoder = Encoder(encoder_params[0], encoder_params[1]).cuda()
@@ -213,7 +213,7 @@ def test():
             predictions=predictions.transpose((0,1,3,4,2))
         np.savez_compressed(os.path.join(save_dir_validate, TIMESTAMP+'_cnnlstm_prediction'), predictions)
         
-        np.savez_compressed(os.path.join(save_dir_validate, TIMESTAMP+'_input'), x_test,y_test,dm.lstm_test.solarsat_dataloader._samples)
+        np.savez_compressed(os.path.join(save_dir_validate, TIMESTAMP+'_input'), x_test,y_test,dm.lstm_test.solarcube_dataloader._samples)
     else:
         print('no such checkpoint')
 
