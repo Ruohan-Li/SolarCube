@@ -5,8 +5,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 import torch
 import sys
 print(sys.path)
-# from data.SolarSat_torch_wrap import SolarSatDataModule
-from solarsat.solarsat_torch_wrap import SolarSatDataModule
+from solarcube.solarsat_torch_wrap import SolarSatDataModule
 import sys
 from tqdm import tqdm
 import numpy as np
@@ -93,36 +92,6 @@ def data():
     print(x_train_np.shape, y_train_np.shape)
     np.savez_compressed(args.save_path+'_train.npz', x_train_np, y_train_np, dm.lstm_train_val.solarsat_dataloader._samples)
     
-    # ###only x
-    # print('saving test data...')
-    # x_test=[]
-    # t = tqdm(testLoader, leave=False, total=len(testLoader))
-    # for i, (inputVar) in enumerate(t):
-    #     # Check for NaNs in inputVar and targetVar before appending
-    #     if torch.isnan(inputVar).any():
-    #         print(f"NaN detected in inputVar at batch {i}")
-        
-        
-    #     x_test.append(inputVar.detach().cpu())  # Ensure tensors are detached and moved to CPU
-
-    # x_test_tensor = torch.cat(x_test, dim=0)  # Adjust 'dim' as necessary for your data
-
-    # x_test_np = x_test_tensor.numpy()
-
-    # if np.isnan(x_test_np).any():
-    #     print('final!!')
-    # print(x_test_np.shape)
-    # np.savez_compressed(args.save_path+'_test.npz', x_test_np, dm.lstm_test.solarsat_dataloader._samples)
-
-    # print('saving train data...')
-    # x_train=[]
-    # t = tqdm(trainvalLoader, leave=False, total=len(trainvalLoader))
-    # for i, ( inputVar) in enumerate(t):
-    #     x_train.append(inputVar.detach().cpu())  # Ensure tensors are detached and moved to CPU
-    # x_train_tensor = torch.cat(x_train, dim=0)  # Adjust 'dim' as necessary for your data
-    # x_train_np = x_train_tensor.numpy()
-    # print(x_train_np.shape)
-    # np.savez_compressed(args.save_path+'_train.npz', x_train_np,  dm.lstm_train_val.solarsat_dataloader._samples)
 if __name__ == "__main__":
     print('loading data...')
     data()
