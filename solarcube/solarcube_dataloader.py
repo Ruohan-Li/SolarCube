@@ -10,16 +10,16 @@ os.environ["HDF5_USE_FILE_LOCKING"] = 'FALSE'
 TYPES    = ['vis047','vis086','ir133','ssr','sza','insitu']
 # _curr_dir = os.path.realpath(os.path.dirname(os.path.realpath(__file__)))
 DEFAULT_DATA_HOME = os.path.abspath(os.path.join( '..', '..', 'data', 'geonex_sat'))
-DEFAULT_TILELIST   = DEFAULT_DATA_HOME + '/solarsat_sitelist.csv'
-DEFAULT_INSITU = DEFAULT_DATA_HOME+'/solarsat_insitu.csv'
+DEFAULT_TILELIST   = DEFAULT_DATA_HOME + '/solarcube_sitelist.csv'
+DEFAULT_INSITU = DEFAULT_DATA_HOME+'/solarcube_insitu.csv'
 
-SCALE_SOLARSAT = {'vis047': 0.39,  # Not utilized in original paper
+SCALE_SOLARCUBE = {'vis047': 0.39,  # Not utilized in original paper
                           'vis086': 0.32,
                           'ir133': 17.13,
                           'ssr': 279.11,
                           'sza': 20.19,
                           'insitu' : 279.49}
-OFFSET_SOLARSAT = {'vis047': 0.56,  # Not utilized in original paper
+OFFSET_SOLARCUBE = {'vis047': 0.56,  # Not utilized in original paper
                           'vis086': 0.55,
                           'ir133': 258.55,
                           'ssr': 186.96,
@@ -397,8 +397,8 @@ class SOLARCUBEDataloader:
         :param reverse: boolean undo normalization
         :return: normalized x array
         """
-        scale_dict = SCALE_SOLARSAT
-        offset_dict = OFFSET_SOLARSAT
+        scale_dict = SCALE_SOLARCUBE
+        offset_dict = OFFSET_SOLARCUBE
         
         scale = scale_dict[typ]
         offset = offset_dict[typ]

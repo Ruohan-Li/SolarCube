@@ -113,7 +113,7 @@ class SOLARCUBE(data.Dataset):
     
   
 
-class SolarSatLightningDataModule(pl.LightningDataModule):
+class SolarCubeLightningDataModule(pl.LightningDataModule):
     #raw_folder = '/gpfs/data1/lianggp/lir/forcast/'
     #processed_folder = 'data/'
     def __init__(self, dataset_oc = None,
@@ -218,7 +218,7 @@ class SolarSatLightningDataModule(pl.LightningDataModule):
         return len(self.lstm_predict)
     
     
-class SolarSatDataModule():
+class SolarCubeDataModule():
     def __init__(self, dataset_oc = None,
                  val_ratio=0.1, seed=123, batch_size: int = 10):
         """

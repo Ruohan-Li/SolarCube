@@ -15,21 +15,21 @@ from torch.utils.data import random_split, Subset, DataLoader
 from typing import Optional
 import pytorch_lightning as pl
 import sys
-from .solarsat_dataloader import SOLARSATDataloader
-from solarsat.timefeatures import time_features
-from solarsat.utils import change_layout_np, generate_time_all, genertate_time
+from .solarcube_dataloader import SOLARCUBEDataloader
+from solarcube.timefeatures import time_features
+from solarcube.utils import change_layout_np, generate_time_all, genertate_time
 
 os.environ["HDF5_USE_FILE_LOCKING"] = 'FALSE'
 TYPES    = ['vis047','vis086','ir133','dsr','sza','insitu']
 DEFAULT_DATA_HOME = os.path.abspath(os.path.join( '..', '..', 'data', 'geonex_sat'))
-DEFAULT_TILELIST   = DEFAULT_DATA_HOME + '/solarsat_sitelist.csv'
-DEFAULT_INSITU = DEFAULT_DATA_HOME+'/solarsat_insitu.csv'
+DEFAULT_TILELIST   = DEFAULT_DATA_HOME + '/solarcube_sitelist.csv'
+DEFAULT_INSITU = DEFAULT_DATA_HOME+'/solardube_insitu.csv'
 
-class SOLARSAT(data.Dataset):
+class SOLARCUBE(data.Dataset):
 
     def __init__(self,
                  label_len=8,
-                 data_path='solarsat_image_train.npz',
+                 data_path='solarcube_image_train.npz',
                  load_from_disk=True,
                  tile_list=[1],
                  year_list=['2018'],
@@ -55,7 +55,7 @@ class SOLARSAT(data.Dataset):
                  train=True,
                  batch_size=1
                  ):
-        super(SOLARSAT, self).__init__()
+        super(SOLARCUBE, self).__init__()
         self.load_from_disk = load_from_disk
         self.layout = layout
         self.input_len = input_len
@@ -75,7 +75,7 @@ class SOLARSAT(data.Dataset):
             # self.data=change_layout_np(self.data, in_layout= 'NCTHW', out_layout=self.layout)
             # self.labels=change_layout_np(self.labels, in_layout= 'NCTHW', out_layout=self.layout)
         
-        self.solarsat_dataloader = SOLARSATDataloader(
+        self.solarsat_dataloader = SOLARCUBEDataloader(
                 tile_list=tile_list,
                 year_list=year_list,
                 x_img_types=x_img_types,
@@ -237,7 +237,7 @@ class SOLARSAT(data.Dataset):
 #         return len(self.lstm_predict)
     
     
-class SolarSatDataModule():
+class SolarCubeDataModule():
     def __init__(self, dataset_oc = None,
                  val_ratio=0.1, seed=123, batch_size: int = 10):
         """
@@ -286,22 +286,22 @@ class SolarSatDataModule():
         
                  
     def prepare_data(self):
-        data = SOLARSAT(sample_interval=self.sample_interval,x_img_types=self.x_img_types, y_img_types=self.y_img_types, load_from_disk=self.load_from_disk,data_path=self.data_path+'test.npz', tile_list=self.train_tile_list,year_list=self.train_year_list, input_len=self.input_len, output_len=self.output_len, normalize_max=self.normalize_max, downscale_s=self.downscale_s, downscale_t=self.downscale_t, train=True)
+        data = SOLARCUBE(sample_interval=self.sample_interval,x_img_types=self.x_img_types, y_img_types=self.y_img_types, load_from_disk=self.load_from_disk,data_path=self.data_path+'test.npz', tile_list=self.train_tile_list,year_list=self.train_year_list, input_len=self.input_len, output_len=self.output_len, normalize_max=self.normalize_max, downscale_s=self.downscale_s, downscale_t=self.downscale_t, train=True)
         return data
         
     def setup(self, stage: Optional[str] = None):
         if stage == "fit" or stage is None:
-            self.lstm_train_val = SOLARSAT(sample_interval=self.sample_interval,x_img_types=self.x_img_types, y_img_types=self.y_img_types, point_based=self.point_based, normalize_x=self.normalize_x,load_from_disk=self.load_from_disk,data_path=self.data_path+'train.npz',tile_list=self.train_tile_list,year_list=self.train_year_list, input_len=self.input_len, output_len=self.output_len, normalize_max=self.normalize_max, downscale_s=self.downscale_s, downscale_t=self.downscale_t, train=True)
+            self.lstm_train_val = SOLARCUBE(sample_interval=self.sample_interval,x_img_types=self.x_img_types, y_img_types=self.y_img_types, point_based=self.point_based, normalize_x=self.normalize_x,load_from_disk=self.load_from_disk,data_path=self.data_path+'train.npz',tile_list=self.train_tile_list,year_list=self.train_year_list, input_len=self.input_len, output_len=self.output_len, normalize_max=self.normalize_max, downscale_s=self.downscale_s, downscale_t=self.downscale_t, train=True)
             all_indices = range(len(self.lstm_train_val))
             train_indices, val_indices = train_test_split(all_indices, test_size=self.val_ratio, random_state=self.seed)
             self.lstm_train = Subset(self.lstm_train_val, train_indices)
             self.lstm_val = Subset(self.lstm_train_val, val_indices)
 
         if stage == "test" or stage is None:
-            self.lstm_test = SOLARSAT(sample_interval=self.sample_interval,x_img_types=self.x_img_types, y_img_types=self.y_img_types, point_based=self.point_based, normalize_x=self.normalize_x,load_from_disk=self.load_from_disk,data_path=self.data_path+'test.npz',tile_list=self.test_tile_list,year_list=self.test_year_list, input_len=self.input_len, output_len=self.output_len, normalize_max=self.normalize_max, downscale_s=self.downscale_s, downscale_t=self.downscale_t, train=True)
+            self.lstm_test = SOLARCUBE(sample_interval=self.sample_interval,x_img_types=self.x_img_types, y_img_types=self.y_img_types, point_based=self.point_based, normalize_x=self.normalize_x,load_from_disk=self.load_from_disk,data_path=self.data_path+'test.npz',tile_list=self.test_tile_list,year_list=self.test_year_list, input_len=self.input_len, output_len=self.output_len, normalize_max=self.normalize_max, downscale_s=self.downscale_s, downscale_t=self.downscale_t, train=True)
 
         if stage == "predict" or stage is None:
-            self.lstm_predict = SOLARSAT(sample_interval=self.sample_interval,x_img_types=self.x_img_types, y_img_types=self.y_img_types, point_based=self.point_based, normalize_x=self.normalize_x,load_from_disk=self.load_from_disk,data_path=self.data_path+'test.npz',tile_list=self.test_tile_list,year_list=self.test_year_list, input_len=self.input_len, output_len=self.output_len, normalize_max=self.normalize_max, downscale_s=self.downscale_s, downscale_t=self.downscale_t, train=True)
+            self.lstm_predict = SOLARCUBE(sample_interval=self.sample_interval,x_img_types=self.x_img_types, y_img_types=self.y_img_types, point_based=self.point_based, normalize_x=self.normalize_x,load_from_disk=self.load_from_disk,data_path=self.data_path+'test.npz',tile_list=self.test_tile_list,year_list=self.test_year_list, input_len=self.input_len, output_len=self.output_len, normalize_max=self.normalize_max, downscale_s=self.downscale_s, downscale_t=self.downscale_t, train=True)
          
     def trainval_dataloader(self):
         return DataLoader(self.lstm_train_val, batch_size=self.batch_size, shuffle=False, num_workers=15)
