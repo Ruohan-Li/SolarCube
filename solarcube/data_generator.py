@@ -5,7 +5,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 import torch
 import sys
 print(sys.path)
-from solarcube.solarsat_torch_wrap import SolarSatDataModule
+from solarcube.solarcube_torch_wrap import SolarCubeDataModule
 import sys
 from tqdm import tqdm
 import numpy as np
