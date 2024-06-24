@@ -1,4 +1,4 @@
-# SEVIR
+# SolarCube
 The SolarCube dataset is a collection of temporally and spatially aligned image-based satellite data and point-based insitu data for solar energy forecasting. 
 
 
