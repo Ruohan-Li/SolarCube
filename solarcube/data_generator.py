@@ -45,7 +45,7 @@ torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 # torch.cuda.set_device(1)  
 
-dm = SolarSatDataModule(dataset_oc=dataset_oc)
+dm = SolarCubeDataModule(dataset_oc=dataset_oc)
 dm.prepare_data()
 dm.setup()
 
