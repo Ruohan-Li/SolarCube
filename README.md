@@ -5,4 +5,5 @@ The SolarCube dataset is a collection of temporally and spatially aligned image-
 This repo contains some code and examples for working with the SolarCube dataset.  
 
 * [Viewing some samples of SolarCube](https://github.com/Ruohan-Li/SolarCube/blob/master/view_sample.ipynb)
+* [Data Loader of SolarCube](https://github.com/Ruohan-Li/SolarCube/blob/master/solarcube/solarcube_dataloader.py)
 * [Data Generator of SolarCube](https://github.com/Ruohan-Li/SolarCube/blob/master/solarcube/data_generator.py)
