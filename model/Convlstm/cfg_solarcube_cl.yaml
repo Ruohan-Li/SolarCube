@@ -1,0 +1,23 @@
+dataset:
+  load_from_disk: False
+  img_height: 120
+  img_width: 120
+  train_tile_list: [1, 2, 3, 4, 6, 8, 10, 12, 13, 14, 15, 16, 17, 19]
+  test_tile_list: [5, 7, 9, 11, 18]
+  train_year_list: ['2018']
+  test_year_list: ['2018']
+  x_img_types: ['ssr']
+  y_img_types: ['ssr']
+  input_len: 96
+  output_len: 96
+  sample_interval: 72
+  downscale_s: False
+  downscale_t: False
+  stride: 12
+  layout: "NTCHW"
+  output_type: np.float32
+  normalize_x: False
+  normalize_y: False
+  normalize_max: True
+  point_based: False
+  batch_size: 4

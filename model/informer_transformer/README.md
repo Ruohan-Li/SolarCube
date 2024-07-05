@@ -6,20 +6,31 @@ For a detailed explanation of the methods, please refer to the paper:
 
 
 ## Usage
+Commands for generating training and testing data 
+
+```bash
+# short term 
+python data_generator.py --save_path solarcube_point_if_ --cfg cfg_solarcube_if_data.yaml
+
+# long term
+python data_generator.py --save_path solarcube_point_if_long_ --cfg cfg_solarcube_if_data_long.yaml
+
+```
+
 Commands for training and testing the model 
 
 ```bash
 # short term informer
-python -u main_informer.py --model informer_noT --data_path solarsat_point_if_ --seq_len 12 --label_len 12 --pred_len 12
+python -u main_informer.py --model informer_noT --data_path solarcube_point_if_ --seq_len 12 --label_len 12 --pred_len 12
 
 # short term transformer
-python -u main_transformer.py --model transformer_noT --data_path solarsat_point_if_long_ --seq_len 96 --label_len 96 --pred_len 96
+python -u main_transformer.py --model transformer_noT --data_path solarcube_point_if_long_ --seq_len 96 --label_len 96 --pred_len 96
 
 # long term informer
-python -u main_informer.py --model informer --data_path solarsat_point_if_ --seq_len 12 --label_len 12 --pred_len 12
+python -u main_informer.py --model informer --data_path solarcube_point_if_ --seq_len 12 --label_len 12 --pred_len 12
 
 # long term transformer
-python -u main_transformer.py --model transformer_noT --data_path solarsat_point_if_long_ --seq_len 96 --label_len 96 --pred_len 96
+python -u main_transformer.py --model transformer_noT --data_path solarcube_point_if_long_ --seq_len 96 --label_len 96 --pred_len 96
 ```
 
 More parameter information please refer to `main_informer.py` and `main_transformer.py`.

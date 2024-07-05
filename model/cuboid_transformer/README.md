@@ -9,10 +9,13 @@ For a detailed explanation of the methods, please refer to the paper:
 Commands for training and testing the model 
 
 ```bash
-#train
-python train_cuboid_solarsat.py --cfg cfg_solarsat.yaml
+#axial
+python tune_cuboid_solarcube.py --cfg cfg_solarcube_tf_axial.yaml
 
-#Test
-python train_cuboid_solarsat.py --cfg cfg_solarsat.yaml --test
+#divided space time
+python tune_cuboid_solarcube.py --cfg cfg_solarcube_tf_dividest.yaml
+
+#video swin
+python tune_cuboid_solarcube.py --cfg cfg_solarcube_tf_swin.yaml
 ```
 

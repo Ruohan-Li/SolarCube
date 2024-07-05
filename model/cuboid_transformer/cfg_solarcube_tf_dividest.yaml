@@ -1,31 +1,26 @@
 dataset:
-  dataset_path: '/gpfs/data1/lianggp/lir/solar_data/data/geonex_sat'
-  dataset_source: "lstm"
+  oad_from_disk: False
+  dataset_path: "solarcube_image_"
+  dataset_source: "solarcube"
   time_res: "15min"
-  img_height: 60
-  img_width: 60
-  train_tile_list: ['h15v03','h12v01','h15v04','h10v03','h17v03','h21v14','h52v13','h51v12','h51v04','h44v06','h50v05','h58v17','h55v15','h53v03']
-  test_tile_list: ['h13v02','h12v03','h46v12','h53v02']
+  img_height: 120
+  img_width: 120
+  train_tile_list: [1, 2, 3, 4, 6, 8, 10, 12, 13, 14, 15, 16, 17, 19]
+  test_tile_list: [5, 7, 9, 11, 18]
   train_year_list: ['2018']
   test_year_list: ['2018']
   x_img_types: ['ssr']
   y_img_types: ['ssr']
-  input_len: 8
+  input_len: 12
   output_len: 12
-  sample_interval: 4
-  downscale: 10
+  sample_interval: 8
+  downscale_s: False
+  downscale_t: False
   seq_len: None
   plot_stride: 2
   interval_real_time: 15
-  sample_mode: "sequent"
   stride: 12
-  layout: "NTHWC"
-  train_val_split_date: [2018, 1, 1]
-  train_test_split_date: [2018, 6, 1]
-  metrics_mode: "0"
-  metrics_list: ['csi', 'pod', 'sucr', 'bias']
-  threshold_list: [16, 74, 133, 160, 181, 219]
-  tile_all: '/gpfs/data1/lianggp/lir/solar_data/code/15min_station.csv'
+  layout: "THWC"
   start_date: None
   end_date: None
   datetime_filter: None
@@ -34,16 +29,18 @@ dataset:
   shuffle: False
   pin_memory: True
   output_type: np.float32
-  normalize_x: None
-  normalize_y: None
+  normalize_x: False
+  normalize_y: False
   normalize_max: True
+  point_based: False
   batch_size: 1
+  ignorenan: False
 layout:
-  in_len: 8
+  in_len: 12
   out_len: 12
   layout: "NTHWC"
 optim:
-  total_batch_size: 32
+  total_batch_size: 1
   micro_batch_size: 1
   seed: 0
   method: "adamw"
@@ -59,11 +56,11 @@ optim:
   # early stopping
   early_stop: true
   early_stop_mode: "min"
-  early_stop_patience: 20
+  early_stop_patience: 10
   save_top_k: 1
 logging:
-  version: "test2"
-  logging_prefix: "Cuboid_LSTM"
+  version: "axial"
+  logging_prefix: "SolarSat"
   monitor_lr: true
   monitor_device: false
   track_grad_norm: -1
@@ -79,8 +76,8 @@ vis:
   eval_example_only: false
   plot_stride: 2
 model:
-  input_shape: [8, 60, 60, 1]
-  target_shape: [12, 60, 60, 1]
+  input_shape: [12, 120, 120, 1]
+  target_shape: [12, 120, 120, 1]
   base_units: 64
   block_units: null
   scale_alpha: 1.0
@@ -104,8 +101,8 @@ model:
   separate_global_qkv: false
   global_dim_ratio: 1
 
-  self_pattern: "axial"
-  cross_self_pattern: "axial"
+  self_pattern: "divided_st2"
+  cross_self_pattern: "divided_st2"
   cross_pattern: "cross_1x1"
   dec_cross_last_n_frames: null
 

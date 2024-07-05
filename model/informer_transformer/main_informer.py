@@ -10,7 +10,7 @@ parser.add_argument('--model', type=str, required=True, default='informer_noT',h
 
 parser.add_argument('--data', type=str, default='solarsat', help='data')
 parser.add_argument('--root_path', type=str, default='', help='root path of the data file')
-parser.add_argument('--data_path', type=str, default='solarsat_point_if_', help='data file')    
+parser.add_argument('--data_path', type=str, default='solarcube_point_if_', help='data file')    
 parser.add_argument('--features', type=str, default='MS', help='forecasting task, options:[M, S, MS]; M:multivariate predict multivariate, S:univariate predict univariate, MS:multivariate predict univariate')
 parser.add_argument('--target', type=str, default='OT', help='target feature in S or MS task')
 #short t, long h

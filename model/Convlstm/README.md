@@ -10,9 +10,9 @@ Commands for training and testing the model
 
 ```bash
 #train
-python model/ConvLSTM-PyTorch/main.py --convlstm --cfg cfg_solarsat_cl_test4.yaml --directory convlstm
+python model/ConvLSTM-PyTorch/main.py --convlstm --cfg cfg_solarcube_cl.yaml --directory convlstm
 
 #Test
-python model/ConvLSTM-PyTorch/main.py --convlstm --cfg cfg_solarsat_tf_test4.yaml --directory convlstm --test
+python model/ConvLSTM-PyTorch/main.py --convlstm --cfg cfg_solarcube_cl.yaml --directory convlstm --test
 ```
 

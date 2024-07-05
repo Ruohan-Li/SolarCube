@@ -10,14 +10,14 @@ parser.add_argument('--model', type=str, required=True, default='transformer_noT
 
 parser.add_argument('--data', type=str, default='solarsat', help='data')
 parser.add_argument('--root_path', type=str, default='', help='root path of the data file')
-parser.add_argument('--data_path', type=str, default='solarsat_point_if_', help='data file')    
+parser.add_argument('--data_path', type=str, default='solarcube_point_if_', help='data file')    
 parser.add_argument('--features', type=str, default='MS', help='forecasting task, options:[M, S, MS]; M:multivariate predict multivariate, S:univariate predict univariate, MS:multivariate predict univariate')
 parser.add_argument('--target', type=str, default='OT', help='target feature in S or MS task')
 #short t, long h
 parser.add_argument('--freq', type=str, default='t', help='freq for time features encoding, options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h')
 parser.add_argument('--checkpoints', type=str, default='./tf_checkpoints/', help='location of model checkpoints')
 
-parser.add_argument('--seq_len', type=int, default=12, help='input sequence length of Informer encoder') #short 8 long 24
+parser.add_argument('--seq_len', type=int, default=12, help='input sequence length of Informer encoder') #short 12 long 24
 parser.add_argument('--label_len', type=int, default=12, help='start token length of Informer decoder') #short 8 long 24
 parser.add_argument('--pred_len', type=int, default=12, help='prediction sequence length') #short 12 long 24
 # Informer decoder input: concat[start token series(label_len), zero padding series(pred_len)]

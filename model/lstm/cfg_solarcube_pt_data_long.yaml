@@ -1,0 +1,20 @@
+dataset:
+  load_from_disk: False
+  train_tile_list: [1, 2, 3, 4, 6, 8, 10, 12, 13, 14, 15, 16, 17, 19]
+  test_tile_list: [5, 7, 9, 11, 18]
+  train_year_list: ['2018']
+  test_year_list: ['2018']
+  x_img_types: ['vis047','vis086','ir133','sza','insitu']
+  y_img_types: ['vis047','vis086','ir133','sza','insitu']
+  input_len: 96
+  output_len: 96
+  sample_interval: 72
+  downscale_s: False
+  downscale_t: False
+  output_type: np.float32
+  normalize_x: True
+  normalize_y: False
+  normalize_max: False
+  batch_size: 4
+  point_based: True
+  ignorenan: True

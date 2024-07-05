@@ -11,11 +11,11 @@ from sklearn.model_selection import train_test_split
 from tensorflow.keras.callbacks import ModelCheckpoint, CSVLogger
 from tensorflow.keras import layers, models
 
-data = np.load('solarsat_point_long_train.npz', allow_pickle=True)
+data = np.load('solarcube_point_long_train.npz', allow_pickle=True)
 x_train = data['arr_0']
 y_train = data['arr_1']
 df_train = data['arr_2']
-data = np.load('solarsat_point_long_test.npz', allow_pickle=True)
+data = np.load('solarcube_point_long__test.npz', allow_pickle=True)
 x_test = data['arr_0']
 y_test = data['arr_1']
 df_test = data['arr_2']
