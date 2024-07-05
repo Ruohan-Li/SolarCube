@@ -1,5 +1,5 @@
 ## Original Code
-The original code can be found in the [Informer](https://github.com/zhouhaoyi/Informer2020).
+The original code can be found in [here](https://github.com/zhouhaoyi/Informer2020).
 
 For a detailed explanation of the methods, please refer to the paper: 
 [Informer: Beyond Efficient Transformer for Long Sequence Time-Series Forecasting](https://arxiv.org/abs/2012.07436). 
