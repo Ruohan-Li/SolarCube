@@ -13,13 +13,13 @@ DEFAULT_DATA_HOME = os.path.abspath(os.path.join( '..', '..', 'data', 'geonex_sa
 DEFAULT_TILELIST   = DEFAULT_DATA_HOME + '/solarcube_sitelist.csv'
 DEFAULT_INSITU = DEFAULT_DATA_HOME+'/solarcube_insitu.csv'
 
-SCALE_SOLARCUBE = {'vis047': 0.39,  # Not utilized in original paper
+SCALE_SOLARCUBE = {'vis047': 0.39,  
                           'vis086': 0.32,
                           'ir133': 17.13,
                           'ssr': 279.11,
                           'sza': 20.19,
                           'insitu' : 279.49}
-OFFSET_SOLARCUBE = {'vis047': 0.56,  # Not utilized in original paper
+OFFSET_SOLARCUBE = {'vis047': 0.56,  
                           'vis086': 0.55,
                           'ir133': 258.55,
                           'ssr': 186.96,
@@ -32,22 +32,51 @@ class SOLARCUBEDataloader:
 
     Parameters
     ----------
-    catalog  str or pd.DataFrame
-        name of SEVIR catalog file to be read in, or an already read in and processed catalog
+    year_list list
+        The list of year
+    tile_list list 
+        The list of station/tile id of the study area
     x_img_types  list
-        List of image types to be used as model inputs.  For types, run SEVIRSequence.get_types()
+        List of image types to be used as model inputs.  
     y_img_types  list or None
        List of image types to be used as model targets (if None, __getitem__ returns only x_img_types )
-    sevir_data_home  str
-       Directory path to SEVIR data
-    catalog  str
-       Name of SEVIR catalog CSV file.
-    normalize_x  list of tuple
-       list the same size as x_img_types containing tuples (scale,offset) used to
-       normalize data via   X  -->  (X-offset)*scale.  If None, no scaling is done
-    normalize_y  list of tuple
-       list the same size as y_img_types containing tuples (scale,offset) used to
-       normalize data via   X  -->  (X-offset)*scale
+    input_len  int
+        input time length
+    output_len int
+        output time length
+    sample_interval int
+        the time length interval when samplying data
+    input_len : int
+        The length of the input time sequence. 
+    output_len : int
+        The length of the output time sequence. 
+    sample_interval : int
+        The interval at which data is sampled. 
+    downscale_s : int, optional, default=20
+        The spatial downscaling factor. This reduces the spatial resolution of the data by the specified factor.
+    downscale_t : int, optional, default=None
+        The temporal downscaling factor. This reduces the temporal resolution of the data by the specified factor.
+    tile_all : list, optional, default=DEFAULT_TILELIST
+        The complete list of tiles to be considered in the study.
+    start_date : datetime or None, optional
+        The start date for the data selection. If None, all available data before end_date is considered.
+    end_date : datetime or None, optional
+        The end date for the data selection. If None, all available data after start_date is considered.
+    normalize_x : bool, optional, default=True
+        Whether to normalize the input data. Normalization typically scales data to have mean 0 and variance 1.
+    normalize_y : bool, optional, default=False
+        Whether to normalize the output data. If False, output data is not normalized.
+    normalize_max : bool, optional, default=False
+        Whether to normalize data by its maximum value instead of mean and variance.
+    point_based : bool, optional, default=True
+        Whether the data is point-based (e.g., time series) or grid-based (e.g., images).
+    layout : str, optional, default='NCHW'
+        The layout of the data arrays. 'NCHW' means (Number of samples, Channels, Height, Width).
+    batch_size : int, optional, default=5
+        The number of samples per batch for data loading.
+    ignorenan : bool, optional, default=False
+        Whether to ignore NaN values in the data. 
+
 
     Returns
     -------
@@ -73,11 +102,11 @@ class SOLARCUBEDataloader:
     def __init__(self,
                  tile_list=[1],
                  year_list=['2018'],
-                 x_img_types=['vis047','vis086','ir133','sza','insitu'],
+                 x_img_types=['vis047','vis086','ir133','sza','insitu'],  
                  y_img_types=['insitu'],
                  input_len = 8,
                  output_len = 12,
-                 sample_interval = 4,
+                 sample_interval = None,
                  downscale_s = 20,
                  downscale_t = 4,
                  tile_all=DEFAULT_TILELIST,
@@ -334,7 +363,7 @@ class SOLARCUBEDataloader:
                         array[array==nan_value]=np.nan
                     array[array==nan_value]=np.nan
                     data_i = array[np.newaxis, ...] #(1, T, H, W)
-                    # print('hh ',data_i.shape)
+    
                 if self.normalize_max:
                     if typ == 'ssr':
                         file_name_sza= '{}/SolarSat_{}_{}_{}.hdf'.format(DEFAULT_DATA_HOME, row['year'], row['tile'], 'sza')
@@ -352,7 +381,6 @@ class SOLARCUBEDataloader:
                     block_size = (1,1,self.downscale_s,self.downscale_s)
                     data_i = block_reduce(data_i, block_size, np.nanmean)
                 if self.downscale_t:
-                    # print(self.downscale_t)
                     block_size = (1,self.downscale_t,1,1)
                     data_i = block_reduce(data_i, block_size, np.nanmean)
                 if self.ignorenan:
