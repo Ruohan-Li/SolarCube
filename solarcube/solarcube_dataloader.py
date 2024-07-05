@@ -63,9 +63,9 @@ class SOLARCUBEDataloader:
     end_date : datetime or None, optional
         The end date for the data selection. If None, all available data after start_date is considered.
     normalize_x : bool, optional, default=True
-        Whether to normalize the input data. Normalization typically scales data to have mean 0 and variance 1.
+        Whether to normalize the input data. 
     normalize_y : bool, optional, default=False
-        Whether to normalize the output data. If False, output data is not normalized.
+        Whether to normalize the output data. 
     normalize_max : bool, optional, default=False
         Whether to normalize data by its maximum value instead of mean and variance.
     point_based : bool, optional, default=True
@@ -75,7 +75,7 @@ class SOLARCUBEDataloader:
     batch_size : int, optional, default=5
         The number of samples per batch for data loading.
     ignorenan : bool, optional, default=False
-        Whether to ignore NaN values in the data. 
+        Whether to ignore NaN values in the data when samplying. 
 
 
     Returns
@@ -93,8 +93,8 @@ class SOLARCUBEDataloader:
         seq = SOLARCUBESequence(x_img_types=['ssr'],y_img_types=['ssr'],batch_size=4)
         X,Y = seq.__getitem__(420)  # X,Y are lists same length as x_img_types and y_img_types
 
-        # Get ir satellite as X,  ssr for Y for point-based task
-        seq = SOLARCUBESequence(x_img_types=['vis047'],y_img_types=['ssr'],point_based=True,batch_size=4)
+        # Get vis047 satellite as X,  ssr for Y for point-based task
+        seq = SOLARCUBESequence(x_img_types=['vis047'],y_img_types=['ssr'],point_based=True)
         X,Y = seq.__getitem__(420)  # X,Y are lists same length as x_img_types and y_img_types
 
     """
@@ -112,9 +112,6 @@ class SOLARCUBEDataloader:
                  tile_all=DEFAULT_TILELIST,
                  start_date=None,
                  end_date=None,
-                 datetime_filter=None,
-                 catalog_filter=None,
-                 unwrap_time=False,
                  output_type=np.float32,
                  normalize_x=True,
                  normalize_y=False,
@@ -125,7 +122,6 @@ class SOLARCUBEDataloader:
                  ignorenan=False
                  ):
         self._samples = None
-        # self._hdf_files = {}
         self.tile_list = tile_list
         self.year_list = year_list
         self.x_img_types = x_img_types
@@ -137,11 +133,8 @@ class SOLARCUBEDataloader:
         self.downscale_t = downscale_t
         self.tile_all=pd.read_csv(tile_all,low_memory=False)
 
-        self.datetime_filter = datetime_filter
-        self.catalog_filter = catalog_filter
         self.start_date = start_date
         self.end_date = end_date
-        self.unwrap_time = unwrap_time
         self.output_type = output_type
         self.normalize_x = normalize_x
         self.normalize_y = normalize_y
@@ -151,20 +144,6 @@ class SOLARCUBEDataloader:
         self.ignorenan = ignorenan
         self.batch_size = batch_size
         self.insitu=pd.read_csv(DEFAULT_INSITU,low_memory=False)
-        # if normalize_x:
-        #     assert (len(normalize_x) == len(x_img_types))
-        # if normalize_y:
-        #     assert (len(normalize_y) == len(y_img_types))
-
-        # if self.start_date:
-        #     self.catalog = self.catalog[self.catalog.time_utc > self.start_date]
-        # if self.end_date:
-        #     self.catalog = self.catalog[self.catalog.time_utc <= self.end_date]
-        # if self.datetime_filter:
-        #     self.catalog = self.catalog[self.datetime_filter(self.catalog.time_utc)]
-
-        # if self.catalog_filter:
-        #     self.catalog = self.catalog[self.catalog_filter(self.catalog)]
 
         self._open_index_files()
         self._compute_samples()
@@ -172,7 +151,7 @@ class SOLARCUBEDataloader:
 
     def _compute_samples(self):
         """
-        Computes the list of samples in catalog to be used. This sets
+        Computes the list of samples to be used. This sets
            self._samples  
 
         """
@@ -185,6 +164,10 @@ class SOLARCUBEDataloader:
         self._samples = self._sample_index_df(imgts=imgts)
         
     def _sample_index_df(self,imgts):
+        """
+        samplying the data within the year list and tile list with the sepecific input length, output length, and interval
+        return dataframes with start_index of each sample
+        """
         d = {'tile': [], 'year': [], 'start_index': []}
         sample_size=self.input_len+self.output_len
         for year in self.year_list:
@@ -236,24 +219,7 @@ class SOLARCUBEDataloader:
 
     def get_batch(self,idx):
         """
-        Returns selected batch from the selected SolarSat entries.
-        
-        Parameters
-        ----------
-        idx int
-          batch index between 0 and __len__()
-        return_meta bool
-           If true, metadata of samples is also returned. 
-           
-        Returns
-        -------
-        If return_meta is False:
-           returns X   if self.y_img_types is None
-              else returns (X,Y) 
-        Elif return_meta is True:
-            returns X,meta    if self.y_img_types is None
-              else returns (X,Y),meta 
-        
+        Returns selected batch from the selected SolarCube entries.
         """
         batch = self._get_batch_samples(idx)
         data = {}
@@ -266,7 +232,6 @@ class SOLARCUBEDataloader:
             t_out = t_out // self.downscale_t
         X = [data[t][0, :t_in, :, :] if data[t].ndim == 4 else data[t][:, :t_in]
                 for t in self.x_img_types]  # CNTHW format CNT
-        # print(len(X))
         
         if self.normalize_x:
             X = [
@@ -280,13 +245,8 @@ class SOLARCUBEDataloader:
             print('after normalization!:', self.ignorenan)
                     
         X = np.swapaxes(X, 0, 1) # NCTHW format NCT
-        # print(X.shape)
         if len(X.shape)==4:
-            # print(self.layout)
             X = change_layout_np(X, in_layout='TCHW', out_layout=self.layout)
-        # print(X.shape)
-        # print('x:', X[0,:,:,0])
-
         if self.y_img_types:
             # Y = np.array([data[t][0,self.input_len:self.input_len+self.output_len,:,:].astype(np.float32) if data[t].ndim == 4 else data[t][:, self.input_len:self.input_len+self.output_len] for t in self.y_img_types])
             Y = [data[t][0,t_in:t_in+t_out,:,:].astype(np.float32) if data[t].ndim == 4 else data[t][:, t_in:t_in+t_out] for t in self.y_img_types]
@@ -296,23 +256,18 @@ class SOLARCUBEDataloader:
             Y = np.swapaxes(Y, 0, 1)
             if len(Y.shape)==4:
                 Y = change_layout_np(Y, in_layout='TCHW', out_layout=self.layout)
-            # print('y:', Y[0,:,:,0])
             out=X,Y
         else:
             out=X
-
-        # #@
-        
-        # if return_meta:
-        #     meta=self.get_batch_metadata(idx)
-        #     return out,meta
-        # else:
         return out
         
     def _get_batch_samples(self,idx):
             return self._samples.iloc[idx * self.batch_size:(idx + 1) * self.batch_size]
   
     def _genertate_insitu(self, site_id, window_size=15):
+        """ 
+        returns dict { img_type : {"meta" : META, "data": DATA} }
+        """
         swin = self.insitu[str(site_id)].to_numpy()
         window = np.ones(window_size) / window_size
         half_window = window_size // 2
@@ -440,7 +395,6 @@ def save_all_data(dataloader):
     all_x = []
     all_y = []
     
-
     for idx in tqdm(range(dataloader.__len__()), desc="Loading data"):
         data = dataloader[idx]
         X, Y = data
