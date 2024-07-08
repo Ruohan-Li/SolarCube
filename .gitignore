@@ -1,4 +1,5 @@
 .ipynb_checkpints/
+.ipynb
 model/experiments/
 solarsat/__pycache__/
 model/cuboid_transformer/__pycache__/
